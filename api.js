@@ -119,6 +119,7 @@ const downloadBook = async (token, bookUrl, standardId) => {
       if (response.status === 200) {
         return response.arrayBuffer();
       } else {
+        console.log("error", response)
         throw new Error("Something went wrong on API server!");
       }
     })
@@ -136,7 +137,7 @@ const downloadBook = async (token, bookUrl, standardId) => {
           };
         });
         console.log("bb", finalResult);
-        //saveBook(token, standardId, finalResult);
+        saveBook(token, standardId, finalResult);
       });
     })
     .catch((error) => {
@@ -159,9 +160,6 @@ const saveBook = async (token, standardId, content) => {
       content
     )}}`,
   });
-
-  // console.log("ssseee", request);
-  // return;
 
   await fetch(request)
     .then((response) => {
@@ -219,10 +217,10 @@ const run = async () => {
 
 // todo scheduler
 
-// run();
+run();
 
-downloadBook(
-  "eyJhbGciOiJIUzUxMiJ9.eyJsb2dpbl91c2VyX2tleSI6IjJjOTdlODU2LTIyMjItNGZhNi04YjY2LTM2OTZjYmFjOGNiMSJ9.QW7tyq1mFWP3PWjeXK12dxXIhqCiumYmUSyPynN2aMdSgZD0VRevO8WxEwMGnkyzQS-Nm8BWyRWb0gkHNaF59g",
-  HOST + "/prod-api/profile/upload/2023/03/31/信息安全技术+云计算网络入侵防御系统安全技术要求_20230331215705A001.pdf",
-  1
-);
+// downloadBook(
+//   "eyJhbGciOiJIUzUxMiJ9.eyJsb2dpbl91c2VyX2tleSI6IjJjOTdlODU2LTIyMjItNGZhNi04YjY2LTM2OTZjYmFjOGNiMSJ9.QW7tyq1mFWP3PWjeXK12dxXIhqCiumYmUSyPynN2aMdSgZD0VRevO8WxEwMGnkyzQS-Nm8BWyRWb0gkHNaF59g",
+//   HOST + "/prod-api/profile/upload/2023/03/31/信息安全技术+云计算网络入侵防御系统安全技术要求_20230331215705A001.pdf",
+//   1
+// );
