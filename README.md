@@ -4,13 +4,14 @@
 - table data affects final result
 
 ### Installation offline
-#### Nodejs v18.15.0 and above required
-#### Refer to the link below
+Refer to the link below
 https://github.com/nodejs/help/wiki/Installation#how-to-install-nodejs-via-binary-archive-on-linux
 
+**Nodejs v18.15.0 and above required**
+
 ### How to run
-#### Environment variable refer to file .env.example
-#### Command as below
+- Environment variables refer to file `.env.example`
+- Command as below
 ```
 node api.js
 ```
