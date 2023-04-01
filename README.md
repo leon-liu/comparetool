@@ -8,9 +8,9 @@
 #### Refer to the link below
 https://github.com/nodejs/help/wiki/Installation#how-to-install-nodejs-via-binary-archive-on-linux
 
-### Environment variable refer to file .env.example
-
 ### How to run
+#### Environment variable refer to file .env.example
+#### Command as below
 ```
 node api.js
 ```
