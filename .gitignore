@@ -2,3 +2,4 @@ node_modules
 log
 .env
 *.pdf
+.DS_Store
