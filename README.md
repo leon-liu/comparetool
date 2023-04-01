@@ -13,5 +13,6 @@ https://github.com/nodejs/help/wiki/Installation#how-to-install-nodejs-via-binar
 - Environment variables refer to file `.env.example`
 - Command as below
 ```
-node api.js
+> npm install
+> node api.js
 ```
