@@ -1,27 +1,20 @@
-const getItems = require("./parser");
-
+const fetch = require("node-fetch");
 require("dotenv").config();
+const getItems = require("./parser");
 
 const HOST = process.env.HOST;
 
 const login = async () => {
   const url = HOST + "/prod-api/login";
-
-  const USER_NAME = process.env.USER_NAME;
-  const PASSWORD = process.env.PASSWORD;
-
-  const headers = new Headers({
-    "Content-Type": "application/json",
-  });
-
-  const request = new Request(url, {
-    method: "POST",
-    headers,
-    body: `{"username": "${USER_NAME}", "password":"${PASSWORD}"}`,
-  });
-
   let token = "";
-  await fetch(request)
+  await fetch(url, {
+    method: "POST",
+    body: JSON.stringify({
+      username: process.env.USER_NAME,
+      password: process.env.PASSWORD,
+    }),
+    headers: { "Content-Type": "application/json" },
+  })
     .then((response) => {
       if (response.status === 200) {
         return response.json();
@@ -38,51 +31,15 @@ const login = async () => {
   return token;
 };
 
-const resetGetBook = async (token, id) => {
-  const url = HOST + "/prod-api/standard/materialResource/reset";
-
-  const headers = new Headers({
-    "Content-Type": "application/json",
-    Authorization: token,
-  });
-
-  const request = new Request(url, {
-    method: "POST",
-    headers,
-    body: `{"standardId": ${id}}`,
-  });
-
-  await fetch(request)
-    .then((response) => {
-      if (response.status === 200) {
-        return response.json();
-      } else {
-        throw new Error("Something went wrong on API server!");
-      }
-    })
-    .then((response) => {
-      console.log("reset", response);
-    })
-    .catch((error) => {
-      console.error(error);
-    });
-};
-
 const getBook = async (token) => {
   const url = HOST + "/prod-api/standard/materialResource/pending";
 
-  const headers = new Headers({
-    Authorization: token,
-  });
-
-  const request = new Request(url, {
-    headers,
-  });
-
   let bookUrl = "";
   let bookId = -1;
-  let result = true;
-  await fetch(request)
+  let hasBook = true;
+  await fetch(url, {
+    headers: { Authorization: token },
+  })
     .then((response) => {
       if (response.status === 200) {
         return response.json();
@@ -93,7 +50,7 @@ const getBook = async (token) => {
     .then((response) => {
       if (!response.data) {
         console.log("no more");
-        result = false;
+        hasBook = false;
       } else {
         let {
           data: { id, path },
@@ -106,11 +63,11 @@ const getBook = async (token) => {
       console.error(error);
     });
 
-  if (result) {
+  if (hasBook) {
     await downloadBook(token, bookUrl, bookId);
   }
 
-  return result;
+  return hasBook;
 };
 
 const downloadBook = async (token, bookUrl, standardId) => {
@@ -119,26 +76,28 @@ const downloadBook = async (token, bookUrl, standardId) => {
       if (response.status === 200) {
         return response.arrayBuffer();
       } else {
-        console.log("error", response)
         throw new Error("Something went wrong on API server!");
       }
     })
     .then((response) => {
-      getItems(response).then((result) => {
-        const filterResult = result.filter(({ title, content }) => {
-          return title.split(" ").length > 1 && content.length > 0;
+      getItems(response)
+        .then((result) => {
+          const filterResult = result.filter(({ title, content }) => {
+            return title.split(" ").length > 1 && content.length > 0;
+          });
+          const finalResult = filterResult.map(({ title, content }) => {
+            const [a, ...b] = title.split(" ");
+            return {
+              sn: a,
+              title: b.join(" "),
+              content: content.join(""), // need to add \n?
+            };
+          });
+          saveBook(token, standardId, finalResult);
+        })
+        .catch((error) => {
+          console.error(error);
         });
-        const finalResult = filterResult.map(({ title, content }) => {
-          const [a, ...b] = title.split(" ");
-          return {
-            sn: a,
-            title: b.join(" "),
-            content: content.join(""), // need to add \n?
-          };
-        });
-        console.log("bb", finalResult);
-        saveBook(token, standardId, finalResult);
-      });
     })
     .catch((error) => {
       console.error(error);
@@ -148,20 +107,17 @@ const downloadBook = async (token, bookUrl, standardId) => {
 const saveBook = async (token, standardId, content) => {
   const url = HOST + "/prod-api/standard/contentparse/batchadd";
 
-  const headers = new Headers({
-    "Content-Type": "application/json",
-    Authorization: token,
-  });
-
-  const request = new Request(url, {
-    method: "POST",
-    headers,
-    body: `{"standardId": ${standardId}, "contentParseItems": ${JSON.stringify(
-      content
-    )}}`,
-  });
-
-  await fetch(request)
+  await fetch(url, {
+    method: "post",
+    body: JSON.stringify({
+      standardId,
+      contentParseItems: content,
+    }),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: token,
+    },
+  })
     .then((response) => {
       if (response.status === 200) {
         return response.json();
@@ -177,18 +133,11 @@ const saveBook = async (token, standardId, content) => {
     });
 };
 
-const call = async (token) => {
+const updateCache = async (token) => {
   const url = HOST + "/prod-api/standard/comparison/generateIndex";
-
-  const headers = new Headers({
-    Authorization: token,
-  });
-
-  const request = new Request(url, {
-    headers,
-  });
-
-  await fetch(request)
+  await fetch(url, {
+    headers: { Authorization: token },
+  })
     .then((response) => {
       if (response.status === 200) {
         return response.json();
@@ -197,30 +146,52 @@ const call = async (token) => {
       }
     })
     .then((response) => {
-      console.log("call", response);
+      console.log("updateCache", response);
     })
     .catch((error) => {
       console.error(error);
     });
 };
 
-const run = async () => {
-  const token = await login();
-  // await resetGetBook(token, 1);
-  // return
-  let hasMore = true;
-  while (hasMore) {
-    hasMore = await getBook(token);
-  }
-  await call(token);
+module.exports = {
+  login,
+  getBook,
+  updateCache,
 };
 
-// todo scheduler
-
-run();
-
+//http://39.101.73.250:8069/prod-api/profile/upload/2023/04/03/信息安全技术+办公信息系统安全基本技术要求_20230403012010A012.pdf
 // downloadBook(
 //   "eyJhbGciOiJIUzUxMiJ9.eyJsb2dpbl91c2VyX2tleSI6IjJjOTdlODU2LTIyMjItNGZhNi04YjY2LTM2OTZjYmFjOGNiMSJ9.QW7tyq1mFWP3PWjeXK12dxXIhqCiumYmUSyPynN2aMdSgZD0VRevO8WxEwMGnkyzQS-Nm8BWyRWb0gkHNaF59g",
 //   HOST + "/prod-api/profile/upload/2023/03/31/信息安全技术+云计算网络入侵防御系统安全技术要求_20230331215705A001.pdf",
 //   1
 // );
+
+// const resetGetBook = async (token, id) => {
+//   const url = HOST + "/prod-api/standard/materialResource/reset";
+
+//   const headers = new Headers({
+//     "Content-Type": "application/json",
+//     Authorization: token,
+//   });
+
+//   const request = new Request(url, {
+//     method: "POST",
+//     headers,
+//     body: `{"standardId": ${id}}`,
+//   });
+
+//   await fetch(request)
+//     .then((response) => {
+//       if (response.status === 200) {
+//         return response.json();
+//       } else {
+//         throw new Error("Something went wrong on API server!");
+//       }
+//     })
+//     .then((response) => {
+//       console.log("reset", response);
+//     })
+//     .catch((error) => {
+//       console.error(error);
+//     });
+// };

@@ -7,12 +7,12 @@
 Refer to the link below
 https://github.com/nodejs/help/wiki/Installation#how-to-install-nodejs-via-binary-archive-on-linux
 
-**Nodejs v18.15.0 and above required**
+**Nodejs v16.15.0 and above required**
 
 ### How to run
 - Environment variables refer to file `.env.example`
 - Command as below
 ```
 > npm install
-> node api.js
+> node index.js
 ```
